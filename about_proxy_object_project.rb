@@ -15,10 +15,23 @@ require File.expand_path(File.dirname(__FILE__) + '/neo')
 class Proxy
   def initialize(target_object)
     @object = target_object
-    # ADD MORE CODE HERE
+    @messages = []
   end
 
-  # WRITE CODE HERE
+  attr_reader :messages
+
+  def method_missing(sym, *args, &block)
+    @messages << sym
+    @object.send(sym, *args, &block)
+  end
+
+  def called?(method)
+    @messages.include?(method)
+  end
+
+  def number_of_times_called(method)
+    @messages.select { |m| m == method }.size
+  end
 end
 
 # The proxy object should pass the following Koan:
@@ -34,30 +47,64 @@ class AboutProxyObjectProject < Neo::Koan
   end
 
   def test_tv_methods_still_perform_their_function
-   assert_equal(2,2)
+    tv = Proxy.new(Television.new)
+
+    tv.channel = 10
+    tv.power
+
+    assert_equal 10, tv.channel
+    assert tv.on?
   end
 
   def test_proxy_records_messages_sent_to_tv
-     assert_equal(2,2)
+    tv = Proxy.new(Television.new)
+
+    tv.power
+    tv.channel = 10
+
+    assert_equal [:power, :channel=], tv.messages
   end
 
   def test_proxy_handles_invalid_messages
-     assert_equal(2,2)
+    tv = Proxy.new(Television.new)
+
+    assert_raise(NoMethodError) do
+      tv.no_such_method
     end
   end
 
   def test_proxy_reports_methods_have_been_called
-    assert_equal(2,2)
+    tv = Proxy.new(Television.new)
+
+    tv.power
+    tv.power
+
+    assert tv.called?(:power)
+    assert ! tv.called?(:channel)
   end
 
   def test_proxy_counts_method_calls
-     assert_equal(2,2)
+    tv = Proxy.new(Television.new)
+
+    tv.power
+    tv.channel = 48
+    tv.power
+
+    assert_equal 2, tv.number_of_times_called(:power)
+    assert_equal 1, tv.number_of_times_called(:channel=)
+    assert_equal 0, tv.number_of_times_called(:on?)
   end
 
   def test_proxy_can_record_more_than_just_tv_objects
-    assert_equal(2,2)
+    proxy = Proxy.new("Code Mash 2009")
+
+    proxy.upcase!
+    result = proxy.split
+
+    assert_equal ["CODE", "MASH", "2009"], result
+    assert_equal [:upcase!, :split], proxy.messages
   end
-#end
+end
 
 
 # ====================================================================
@@ -84,18 +131,40 @@ end
 # Tests for the Television class.  All of theses tests should pass.
 class TelevisionTest < Neo::Koan
   def test_it_turns_on
-     assert_equal(2,2)
+    tv = Television.new
+
+    tv.power
+    assert tv.on?
   end
 
   def test_it_also_turns_off
-    assert_equal(2,2)
+    tv = Television.new
+
+    tv.power
+    tv.power
+
+    assert ! tv.on?
   end
 
   def test_edge_case_on_off
-     assert_equal(2,2)
+    tv = Television.new
+
+    tv.power
+    tv.power
+    tv.power
+
+    assert tv.on?
+
+    tv.power
+
+    assert ! tv.on?
   end
 
   def test_can_set_the_channel
-     assert_equal(2,2)
+    tv = Television.new
+
+    tv.channel = 11
+    assert_equal 11, tv.channel
   end
 end
+  

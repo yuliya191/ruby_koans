@@ -21,7 +21,11 @@ class AboutMessagePassing < Neo::Koan
   end
 
   def test_methods_can_be_invoked_more_dynamically
-   assert_equal(2,2)    # What would you need to do to the string?
+    mc = MessageCatcher.new
+
+    assert mc.send("caught?")
+    assert mc.send("caught" + "?" )    # What do you need to add to the first string?
+    assert mc.send("CAUGHT?".downcase )      # What would you need to do to the string?
   end
 
   def test_send_with_underscores_will_also_send_messages
